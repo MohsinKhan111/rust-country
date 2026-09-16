@@ -1,0 +1,10 @@
+# Allowlist. Everything in this folder is ignored unless named below, so
+# nothing unrelated can be committed by accident.
+/*
+
+!/.gitignore
+!/LICENSE
+!/README.md
+!/index.html
+!/rust-country.html
+!/docs/
