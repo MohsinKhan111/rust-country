@@ -93,9 +93,9 @@
   .cluster { position:absolute; top:56%; transform:translateY(-50%); }
   #dpad    { left:12px;  width:162px; height:162px; }
   #face    { right:12px; width:168px; height:168px; }
-  body.touch.land .cluster { top:auto; bottom:18px; transform:none; }
-  body.touch.land #dpad { left:20px;  width:150px; height:150px; }
-  body.touch.land #face { right:20px; width:158px; height:158px; }
+  body.touch.land .cluster { top:50%; bottom:auto; transform:translateY(-50%); }
+  body.touch.land #dpad { left:10px;  width:146px; height:146px; }
+  body.touch.land #face { right:10px; width:152px; height:152px; }
 
   /* ---- D-pad: one cross, driven by where your thumb is, not by 4 buttons.
      Sliding from left to up-left has to work without lifting off. ---- */
@@ -262,6 +262,17 @@ function deckHeight() {
   return Math.round(Math.max(250, window.innerHeight - screenH));
 }
 
+/* Width the pads occupy down each side in landscape. The picture has to be
+   sized to fit BETWEEN them: it is a fixed 16:9 block drawn centred, so on a
+   viewport narrower than the picture plus both clusters the thumbs end up
+   sitting on top of the game (D42). Measured overlapping at 800x330 and
+   740x360, which is an ordinary phone in landscape with browser chrome. */
+function padGutter() {
+  if (!TOUCH_ON) return 0;
+  if (window.innerWidth <= window.innerHeight) return 0;   // portrait uses the deck
+  return 172;
+}
+
 function fitCanvas() {
   const land = window.innerWidth > window.innerHeight;
   document.body.classList.toggle('land', TOUCH_ON && land);
@@ -269,8 +280,9 @@ function fitCanvas() {
   document.documentElement.style.setProperty('--pad', pad + 'px');
 
   // Leave a little breathing room so the frame never touches the window edge.
-  const availW = window.innerWidth  - (TOUCH_ON ? 0 : 16);
-  const availH = window.innerHeight - pad - (TOUCH_ON ? 0 : 16);
+  const gut = padGutter();
+  const availW = window.innerWidth  - gut * 2 - (TOUCH_ON ? 0 : 16);
+  const availH = window.innerHeight - pad - (TOUCH_ON ? 6 : 16);
   let s = Math.min(availW / VIEW_W, availH / VIEW_H);
 
   /* Integer scale only (D8) - EXCEPT on a phone. A 390px-wide screen cannot
