@@ -3289,7 +3289,7 @@ function buildLevel() {
 
   /* ================= BEAT 4 - THE RAIL CART (190..281) ================
      The showpiece. A metro viaduct out of the mall roof and into a black
-     tunnel. Scripted ride; jump clears track gaps, down ducks under beams.
+     tunnel. Scripted ride; jump clears the track gaps. Nothing overhead.
      Every hazard is lit by the headlight cone well before SCRAP reaches it
      (DATA.md must-never #2). */
   const CY = 12;                                      // track row
@@ -3310,8 +3310,10 @@ function buildLevel() {
 
   const cartGaps = [[204,206],[216,219],[230,232],[241,244],[252,254],[262,265],[272,274]];
   for (const [a, b] of cartGaps) carve(a, CY, b, CY + 1);
-  const cartBeams = [210, 224, 236, 248, 258, 268, 277];
-  for (const bx of cartBeams) fillT(bx, 8, bx + 1, 10, T.TUNNEL);
+  /* No overhead beams (D41). They were seven forced ducks threaded between
+     seven jumps, on a scripted ride where you cannot slow down - and the duck
+     left five pixels of clearance, which vanished entirely if you were still
+     airborne from the gap before. The ride is the gaps now, and nothing else. */
 
   /* Take the lip off the mall's far wall where it pokes above the roof. It was
      the first step of the climb above (D35), and it was never needed: with it
@@ -3483,7 +3485,7 @@ const S = {
   clamped:null, clampY:0, clampSwing:0, jumpLock:0,
   clampCool:0,
   launch:null, launchT:0, flightT:0, flightDur:0,
-  inCart:null, ducking:false,
+  inCart:null,
   hp:MAX_HP, ammo:0, fireCool:0, muzzle:0,
   invuln:0, hurtT:0, dead:false, deadT:0,
   panel:true,
@@ -3590,7 +3592,7 @@ function scrapReset(pt) {
   S.stomping = false; S.landT = 0; S.crouchT = 0;
   S.clamped = null;
   S.launch = null; S.launchT = 0; S.flightT = 0; S.flightDur = 0;
-  S.inCart = null; S.ducking = false;
+  S.inCart = null;
   S.hp = MAX_HP; S.panel = true; S.invuln = 0; S.hurtT = 0;
   S.fireCool = 0; S.muzzle = 0;
   /* Top back up to the starting load on every respawn. Dying with an empty gun
@@ -4379,8 +4381,7 @@ function showTip(key, msg) {
 
 function updateTips() {
   if (UIF.tipT > 0) UIF.tipT--;
-  if (S.inCart) showTip('duck', 'HOLD DOWN TO DUCK UNDER BEAMS');
-  else if (!S.dead) {
+  if (!S.dead) {
     for (const e of ents) {
       if (e.type !== 'watcher' || e.dead || e.dying) continue;
       if (Math.abs(e.x - S.x) > VIEW_W * 0.42) continue;
@@ -4572,13 +4573,13 @@ function updatePickup(e) {
 const UIF = { scrapPop:0, scrapIdle:999, fusePop:0, fuseIdx:0, beatName:0, beatText:'',
               ammoPop:0, ammoEmpty:0,
               /* A single line of help, shown when the game asks for something the
-                 player has no way to guess: aiming up at a flyer, or ducking a
-                 beam. Each fires once per run. */
+                 player has no way to guess, such as aiming up at a flyer.
+                 Each fires once per run. */
               tip:'', tipT:0, tipsShown:{} };
 
 /* === CART ================================================================
    Beat 4, the showpiece (F34). A scripted second movement mode: the trolley
-   accelerates and does not stop. Jump clears track gaps, down ducks under
+   accelerates and does not stop. Jump clears the track gaps; nothing hangs
    beams.
 
    Per AUDIT.md G3: being hit while riding is normal damage and the cart
@@ -4611,7 +4612,6 @@ function boardCart() {
 function updateCartRide() {
   const c = S.inCart;
   c.vx = approach(c.vx, CART_TOP, 0.035);
-  S.ducking = !!IN.held.down;
 
   if (IN.pressed.jump && c.onTrack) {
     c.vy = CART_JUMP;
@@ -4656,31 +4656,8 @@ function updateCartRide() {
   }
   setCartNoise(true, c.vx / CART_TOP);
 
-  /* Ducking under a beam. A beam BUMPS, it does not wound (D37).
-
-     It used to cost a hit. Measured: ducking leaves five pixels of clearance,
-     and that vanishes entirely if the trolley is still airborne from the gap
-     before it - every gap in this ride is three to five tiles ahead of a beam,
-     so a clean jump routinely puts you into one. A bot that jumped and ducked
-     correctly still took a hit. Seven beams against three hearts made the
-     showpiece the most lethal thing in the game, and it was reported that way:
-     "these huge black rectangles which just kill me".
-
-     Losing half your speed and a second of control is punishment enough. The
-     real skill test in beat 4 is the gaps, and those still kill. */
+  // Nothing overhead any more (D41): no beams, no duck, no head check.
   S.x = c.x; S.y = c.y;
-  const headH = S.ducking ? 11 : 18;
-  if (solidSpan(c.x - 5, c.x + 5, c.y - headH, c.y - headH + 3)) {
-    if (c.bump <= 0) {
-      c.bump = 18;
-      c.vx = Math.max(1.2, c.vx * 0.45);
-      shake(4);
-      SFX.huskBounce();
-      burst(c.x + 6, c.y - 16, 10, { col:'#a8adb5', sp0:0.7, sp1:2.4, grav:0.18,
-                                     life0:10, life1:22 });
-      UIF.tip = 'HOLD DOWN TO DUCK'; UIF.tipT = 150;
-    }
-  }
   if (c.bump > 0) c.bump--;
 
   // Fell into a gap.
@@ -4700,7 +4677,7 @@ function updateCartRide() {
   }
 
   S.treadPhase = (S.treadPhase + c.vx * 0.05) % 1;
-  setAnim(c.onTrack ? (S.ducking ? 'crouch' : 'idle') : (c.vy < 0 ? 'rise' : 'fall'));
+  setAnim(c.onTrack ? 'idle' : (c.vy < 0 ? 'rise' : 'fall'));
 }
 
 /* === WARDEN ==============================================================
@@ -6084,7 +6061,6 @@ function controlsList() {
     ['Y',       'FIRE THE LASER   - AMMO COMES FROM CRATES'],
     ['X',       'SERVO STOMP   - A HEAVY MID-AIR SLAM'],
     ['',        'OR JUST LAND ON ANYTHING FROM ABOVE TO KILL IT'],
-    ['DOWN',    'DUCK UNDER BEAMS ON THE RAIL CART'],
     ['RETRY',   'RESTART THIS SECTION']
   ];
   return [
@@ -6094,7 +6070,6 @@ function controlsList() {
     ['X',             'FIRE THE LASER   - AMMO COMES FROM CRATES'],
     ['Z',             'SERVO STOMP   - A HEAVY MID-AIR SLAM'],
     ['',              'OR JUST LAND ON ANYTHING FROM ABOVE TO KILL IT'],
-    ['S / DOWN',      'DUCK UNDER BEAMS ON THE RAIL CART'],
     ['R',             'RESTART THIS SECTION'],
     ['M',             'SOUND ON / OFF'],
     ['ESC',           'PAUSE']

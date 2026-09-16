@@ -37,7 +37,6 @@ The touch controls appear automatically.
 | `Shift` | boost roll — jump mid-roll to clear big gaps |
 | `X` | fire the laser |
 | `Z` | servo stomp — or just land on anything from above |
-| `S` / down | duck under beams on the rail cart |
 | `R` · `M` · `Esc` | retry section · sound · pause menu |
 
 **Phone** — D-pad, `A` jump, `B` roll, `Y` laser, `X` stomp. Turn the phone
